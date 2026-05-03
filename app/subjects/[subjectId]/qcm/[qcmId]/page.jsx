@@ -1,5 +1,6 @@
 "use client";
 
+import { jsPDF } from "jspdf";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -225,17 +226,124 @@ export default function QcmDetailPage() {
     }
   }
 
-  function exportJson() {
+  function exportPdf() {
     if (!qcm) return;
-    const blob = new Blob([JSON.stringify(qcm, null, 2)], {
-      type: "application/json",
+
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const marginX = 40;
+    const marginTop = 48;
+    const lineGap = 18;
+    const contentWidth = pageWidth - marginX * 2;
+    const fileName = `qcm_${qcm.subject || "subject"}_${qcm.id}.pdf`;
+    const exportDate = new Date().toLocaleString("fr-FR");
+
+    let y = marginTop;
+
+    function ensureSpace(requiredHeight) {
+      if (y + requiredHeight <= pageHeight - 40) return;
+      doc.addPage();
+      y = marginTop;
+    }
+
+    function writeTitle(text, size = 18) {
+      ensureSpace(size + 20);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(size);
+      doc.text(text, marginX, y);
+      y += size + 14;
+    }
+
+    function writeText(text, size = 11, options = {}) {
+      const lines = doc.splitTextToSize(String(text || ""), contentWidth);
+      ensureSpace(lines.length * lineGap + 6);
+      doc.setFont("helvetica", options.bold ? "bold" : "normal");
+      doc.setFontSize(size);
+      doc.text(lines, marginX, y);
+      y += lines.length * lineGap + (options.tight ? 0 : 4);
+    }
+
+    function writeBadge(text, fillColor, textColor = [255, 255, 255]) {
+      const badgeWidth = Math.min(
+        contentWidth,
+        Math.max(90, doc.getTextWidth(text) + 20),
+      );
+      ensureSpace(26);
+      doc.setFillColor(...fillColor);
+      doc.roundedRect(marginX, y - 12, badgeWidth, 18, 6, 6, "F");
+      doc.setTextColor(...textColor);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text(text, marginX + 10, y);
+      doc.setTextColor(0, 0, 0);
+      y += 18;
+    }
+
+    doc.setTextColor(0, 0, 0);
+    writeTitle(qcm.title || "QCM", 20);
+    writeText(`Sujet: ${qcm.subject || subjectId}`, 11, { bold: true });
+    if (qcm.description) writeText(qcm.description, 11);
+    writeText(`Identifiant: ${qcm.id}`, 10);
+    writeText(`Exporté le: ${exportDate}`, 10);
+
+    if (result) {
+      const totalQuestions = displayScore.totalQuestions || questions.length;
+      const percentage = Math.round(displayScore.percentage || 0);
+      writeText(
+        `Score: ${displayScore.okCount}/${totalQuestions} (${percentage}%)`,
+        12,
+        { bold: true },
+      );
+      writeText(`Temps total: ${formatDuration(elapsedMs)}`, 10);
+    }
+
+    questions.forEach((question, index) => {
+      ensureSpace(90);
+      writeText(`Question ${index + 1}`, 12, { bold: true });
+      writeText(question.text || "", 11);
+
+      const evaluation = questionEvaluationById.get(question.id);
+      const selectedIds = evaluation?.selectedIds || new Set();
+      const correctIds = evaluation?.correctIds || new Set();
+      const hasResult = Boolean(result);
+
+      (Array.isArray(question.options) ? question.options : []).forEach(
+        (option) => {
+          const optionId = String(option?.id ?? "");
+          const selected = selectedIds.has(optionId);
+          const correct = correctIds.has(optionId);
+          const label = `${selected ? "[x]" : "[ ]"} ${option?.text || ""}`;
+
+          if (hasResult && correct && selected) {
+            writeBadge("Bonne réponse", [22, 163, 74]);
+            writeText(label, 10, { bold: true });
+          } else if (hasResult && selected && !correct) {
+            writeBadge("Réponse choisie", [220, 38, 38]);
+            writeText(label, 10);
+          } else if (hasResult && correct && !selected) {
+            writeBadge("Réponse correcte", [22, 163, 74]);
+            writeText(label, 10);
+          } else {
+            writeText(label, 10);
+          }
+        },
+      );
+
+      if (result) {
+        const backendAnswer = answerResultByQuestionId.get(question.id);
+        const isCorrect = Boolean(backendAnswer?.isCorrect);
+        const explanation = backendAnswer?.explanation || question.explanation;
+        writeText(`Résultat: ${isCorrect ? "Correct" : "Incorrect"}`, 10, {
+          bold: true,
+        });
+        if (explanation) writeText(`Explication: ${explanation}`, 10);
+      }
+
+      y += 6;
     });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `qcm_${qcm.subject || "subject"}_${qcm.id}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+
+    doc.save(fileName);
   }
 
   async function remove() {
@@ -352,10 +460,10 @@ export default function QcmDetailPage() {
           <button
             type="button"
             className="btn-outline"
-            onClick={exportJson}
+            onClick={exportPdf}
             disabled={!qcm}
           >
-            Exporter JSON
+            Exporter PDF
           </button>
           {getCurrentUser()?.role === "admin" ? (
             <button type="button" className="btn-outline" onClick={remove}>

@@ -81,13 +81,21 @@ export default function SubjectsPage() {
     }
   }
 
+  function archiveSubject(subject) {
+    const subjectId = String(subject?.id || "");
+    if (!subjectId) return;
+
+    setSubjects((current) =>
+      current.filter((item) => String(item?.id || "") !== subjectId),
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold">Sujets</h1>
-        <p className="text-sm text-slate-600">
-          Créez des dossiers de matières (sujets) qui seront enregistrés dans la
-          base de données.
+        <h1 className=" text-red-900 font-bold text-2xl">Sujets</h1>
+        <p className="text-sm font-bold text-blue-900">
+         Créez des dossiers de matières ou de sujets pour organiser vos révisions.
         </p>
       </div>
 
@@ -127,8 +135,8 @@ export default function SubjectsPage() {
           {error}
         </div>
       ) : subjects.length === 0 ? (
-        <div className="rounded-xl border bg-white p-6 text-sm text-slate-600">
-          Aucun sujet pour l’instant. Créez-en un pour commencer.
+        <div className="rounded-xl bg-white p-6 text-center text-sm text-slate-600">
+          Aucun sujet pour l&apos;instant. Créez-en un pour commencer.
         </div>
       ) : (
         <div className="space-y-3">
@@ -137,13 +145,14 @@ export default function SubjectsPage() {
               {deleteError}
             </div>
           ) : null}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {subjects.map((s) => (
               <SubjectFolder
                 key={s.id}
                 subject={s}
                 deleting={deletingId === String(s.id)}
                 onDelete={deleteSubject}
+                onArchive={archiveSubject}
               />
             ))}
           </div>

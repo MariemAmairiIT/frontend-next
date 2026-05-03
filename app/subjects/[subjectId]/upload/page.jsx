@@ -69,25 +69,19 @@ export default function SubjectUploadPage() {
             <span className="text-slate-500">Téléversement</span>
           </div>
           <h1 className="text-2xl font-bold">Générer un QCM</h1>
-          <p className="text-sm text-slate-600">
-            Sujet:{" "}
-            <span className="font-mono text-slate-700">
-              {subjectName || subjectId}
-            </span>
-          </p>
         </div>
         <Link href={`/subjects/${subjectId}/qcm`} className="btn-primary">
           Aller au QCM
         </Link>
       </div>
 
-      <div className="rounded-xl border bg-white p-4">
+      <div className="rounded-xl border border-blue-100 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="font-semibold">Analyse IA du support de cours</h2>
+            <h2 className="font-semibold">Analyse du support de cours</h2>
             <p className="text-sm text-slate-600 mt-1">
-              Importez un fichier, le backend l’analysera puis créera un QCM à
-              partir du contenu.
+              Ajoutez votre fichier pour générer automatiquement un QCM clair et
+              structuré.
             </p>
           </div>
           {loadingSubject ? <Loader label="Chargement du sujet…" /> : null}
@@ -97,7 +91,7 @@ export default function SubjectUploadPage() {
           <div className="mt-3 text-sm text-amber-700">{subjectError}</div>
         ) : null}
 
-        <div className="mt-4">
+        <div className="mt-5">
           <FileUpload
             subjectId={subjectId}
             subjectName={subjectName || subjectId}
@@ -110,12 +104,10 @@ export default function SubjectUploadPage() {
         <h2 className="font-semibold">Résultat attendu</h2>
         <div className="mt-2 text-sm text-slate-600 space-y-2">
           <p>
-            Le fichier est envoyé à l’API IA, qui retourne un QCM structuré.
+            Le fichier est analysé automatiquement afin de générer un QCM
+            structuré pour vous aider à consolider vos connaissances.
           </p>
-          <p>
-            Le QCM est ensuite enregistré côté backend et accessible dans
-            l’onglet QCM.
-          </p>
+
           {generatedQcm ? (
             <p className="text-primary-800 font-medium">
               Dernier QCM généré: {generatedQcm.title || "sans titre"}

@@ -1,9 +1,11 @@
 "use client";
 import { useState } from "react";
+import { FileText, UploadCloud, X } from "lucide-react";
 import { apiFetch } from "@/lib/apiClient";
 
 export default function FileUpload({ subjectId, subjectName, onGenerated }) {
   const [file, setFile] = useState(null);
+  const [dragActive, setDragActive] = useState(false);
   const [questionCount, setQuestionCount] = useState(10);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
@@ -35,6 +37,34 @@ export default function FileUpload({ subjectId, subjectName, onGenerated }) {
       "Erreur inconnue";
 
     return `${detail}${status}`;
+  }
+
+  function selectFile(nextFile) {
+    if (!nextFile) return;
+    setFile(nextFile);
+    setMessage(null);
+    setStepError(null);
+  }
+
+  function clearFile(e) {
+    e.stopPropagation();
+    setFile(null);
+  }
+
+  function handleDragOver(e) {
+    e.preventDefault();
+    setDragActive(true);
+  }
+
+  function handleDragLeave(e) {
+    e.preventDefault();
+    setDragActive(false);
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    setDragActive(false);
+    selectFile(e.dataTransfer.files?.[0]);
   }
 
   async function handleSubmit(e) {
@@ -129,42 +159,75 @@ export default function FileUpload({ subjectId, subjectName, onGenerated }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-5">
       <div className="space-y-2">
-        <label className="text-sm font-medium">Fichier source</label>
-        <input
-          type="file"
-          accept=".pdf,.txt,.docx,.png,.jpg,.jpeg,.webp"
-          onChange={(e) => setFile(e.target.files?.[0] || null)}
-          className="block w-full text-sm"
-        />
-        <p className="text-xs text-slate-600">
-          Le backend analysera ce fichier avec l’IA pour générer le QCM. Limite
-          conseillée: {maxUploadMb} Mo.
-        </p>
+        <label className="text-sm font-medium" htmlFor="qcm-file-upload">
+          Fichier source
+        </label>
+        <label
+          htmlFor="qcm-file-upload"
+          className={`group flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed px-6 py-8 text-center transition ${
+            dragActive
+              ? "border-blue-700 bg-blue-50"
+              : "border-blue-200 bg-slate-50 hover:border-blue-500 hover:bg-blue-50/60"
+          }`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <input
+            id="qcm-file-upload"
+            type="file"
+            accept=".pdf,.txt,.docx,.png,.jpg,.jpeg,.webp"
+            onChange={(e) => selectFile(e.target.files?.[0])}
+            className="sr-only"
+          />
+          <span className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-blue-900 text-white shadow-sm transition group-hover:scale-105">
+            <UploadCloud size={24} />
+          </span>
+          <span className="text-sm font-semibold text-blue-950">
+            Déposez votre fichier ou cliquez pour choisir
+          </span>
+          <span className="mt-1 text-xs text-slate-600">
+            PDF, TXT, DOCX, PNG, JPG, WEBP · max {maxUploadMb} Mo
+          </span>
+        </label>
+
+        {file ? (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <FileText className="shrink-0 text-blue-900" size={18} />
+              <div className="min-w-0">
+                <div className="truncate text-sm font-medium text-blue-950">
+                  {file.name}
+                </div>
+                <div className="text-xs text-slate-600">
+                  {formatFileSize(file.size)}
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-600 hover:bg-white hover:text-red-700"
+              onClick={clearFile}
+              aria-label="Retirer le fichier"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        ) : null}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div>
-          <label className="text-sm font-medium">Nombre de questions</label>
-          <input
-            type="number"
-            min={5}
-            max={30}
-            value={questionCount}
-            onChange={(e) => setQuestionCount(Number(e.target.value) || 10)}
-            className="input mt-1"
-          />
-        </div>
-
-        <div className="flex items-end">
-          <div className="text-xs text-slate-600 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 w-full">
-            Sujet:{" "}
-            <span className="font-medium text-slate-800">
-              {subjectName || subjectId}
-            </span>
-          </div>
-        </div>
+      <div className="max-w-xs">
+        <label className="text-sm font-medium">Nombre de questions</label>
+        <input
+          type="number"
+          min={5}
+          max={30}
+          value={questionCount}
+          onChange={(e) => setQuestionCount(Number(e.target.value) || 10)}
+          className="input mt-1"
+        />
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -175,8 +238,8 @@ export default function FileUpload({ subjectId, subjectName, onGenerated }) {
         >
           {loading ? (
             <span className="inline-flex items-center gap-2">
-              <span className="w-4 h-4 rounded-full border-2 border-white/50 border-t-white animate-spin" />
-              Analyse en cours…
+              <span className="h-4 w-4 rounded-full border-2 border-white/50 border-t-white animate-spin" />
+              Analyse en cours...
             </span>
           ) : (
             "Générer le QCM"
