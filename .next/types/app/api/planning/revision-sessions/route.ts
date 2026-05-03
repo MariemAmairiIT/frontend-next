@@ -1,4 +1,4 @@
-// File: C:\Users\salma\.gemini\antigravity\scratch\iteam-study-planner-vite\app\api\planning\revision-sessions\route.js
+// File: C:\Users\salma\Desktop\study-planner-frontend\app\api\planning\revision-sessions\route.js
 import * as entry from '../../../../../../app/api/planning/revision-sessions/route.js'
 import type { NextRequest } from 'next/server.js'
 

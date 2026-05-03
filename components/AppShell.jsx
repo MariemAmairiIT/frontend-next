@@ -18,7 +18,7 @@ export default function AppShell({ children }) {
     if (isAuthRoute) return;
     const auth = getAuthHeader();
     if (!auth) {
-      router.replace("/signin?message=session-expiree");
+      router.replace("/signin?message=session-expirée");
     }
   }, [isAuthRoute, router]);
 

@@ -573,6 +573,32 @@ export default function ScheduleView() {
 
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
+  const getEventColorClass = (event) => {
+    const durationMinutes = Number(event?.endMin) - Number(event?.startMin);
+
+    if (isRevisionEvent(event)) {
+      return "bg-purple-100 border-purple-300 text-purple-900";
+    }
+
+    if (durationMinutes > 150) {
+      return "bg-blue-100 border-blue-300 text-blue-900";
+    }
+
+    if (durationMinutes === 90) {
+      return "bg-pink-100 border-pink-300 text-pink-900";
+    }
+
+    if (durationMinutes === 120) {
+      return "bg-green-100 border-green-300 text-green-900";
+    }
+
+    if (durationMinutes === 60) {
+      return "bg-orange-100 border-orange-300 text-orange-900";
+    }
+
+    return event?.color || "bg-slate-100 border-slate-300 text-slate-900";
+  };
+
   const getEventPositionFromMinutes = (startMin, endMin) => {
     const topHours = (startMin - BASE_START_MIN) / 60;
     const heightHours = (endMin - startMin) / 60;
@@ -1724,6 +1750,10 @@ export default function ScheduleView() {
                   const isShortRevisionSession =
                     isRevisionEvent(event) &&
                     event.endMin - event.startMin < 120;
+                  const eventColorClass = getEventColorClass(event);
+                  const eventFontClass = isRevisionEvent(event)
+                    ? "font-bold"
+                    : "font-medium";
                   const cursorClass =
                     isActive && activeMode === "drag"
                       ? "cursor-grabbing"
@@ -1749,11 +1779,13 @@ export default function ScheduleView() {
                       role="button"
                       title={isShortRevisionSession ? event.subject : undefined}
                       aria-label={event.subject}
-                      className={`group absolute left-1 right-1 ${event.color} border rounded-lg p-2 pr-8 pointer-events-auto hover:shadow-md transition-shadow select-none touch-none ${cursorClass} ${isActive ? "ring-2 ring-slate-400/40" : ""}`}
+                      className={`group absolute left-1 right-1 ${eventColorClass} ${eventFontClass} border rounded-lg p-2 pr-8 pointer-events-auto hover:shadow-md transition-shadow select-none touch-none ${cursorClass} ${isActive ? "ring-2 ring-slate-400/40" : ""}`}
                       style={{ top: position.top, height: position.height }}
                     >
                       {!isShortRevisionSession && (
-                        <p className="text-sm font-medium leading-tight">
+                        <p
+                          className="text-sm leading-tight"
+                        >
                           {event.subject}
                         </p>
                       )}

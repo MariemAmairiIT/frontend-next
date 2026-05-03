@@ -1,4 +1,4 @@
-// File: C:\Users\salma\.gemini\antigravity\scratch\iteam-study-planner-vite\app\study-plan\page.jsx
+// File: C:\Users\salma\Desktop\study-planner-frontend\app\study-plan\page.jsx
 import * as entry from '../../../../app/study-plan/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

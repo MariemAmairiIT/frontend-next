@@ -36,25 +36,35 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/planning/revision-sessions/route.js"
     ],
-    "/upload/page": [
+    "/api/planning/revision-suggest/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/upload/page.js"
-    ],
-    "/api/planning/extract/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/planning/extract/route.js"
-    ],
-    "/api/planning/save/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/planning/save/route.js"
+      "static/chunks/app/api/planning/revision-suggest/route.js"
     ],
     "/study-plan/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/study-plan/page.js"
+    ],
+    "/upload/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/upload/page.js"
+    ],
+    "/subjects/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/subjects/page.js"
+    ],
+    "/api/subjects/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/subjects/route.js"
+    ],
+    "/(auth)/signup/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(auth)/signup/page.js"
     ]
   }
 }

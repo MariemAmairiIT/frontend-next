@@ -1,4 +1,4 @@
-// File: C:\Users\salma\.gemini\antigravity\scratch\iteam-study-planner-vite\app\(auth)\layout.js
+// File: C:\Users\salma\Desktop\study-planner-frontend\app\(auth)\layout.jsx
 import * as entry from '../../../../app/(auth)/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

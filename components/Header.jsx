@@ -1,16 +1,17 @@
 "use client";
 
-import React from 'react';
-import { Search, Bell } from 'lucide-react';
+import React from "react";
+import Link from "next/link";
+import { Search, Bell } from "lucide-react";
 
 const Header = () => {
   return (
     <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-10">
       <div className="relative w-96 group">
         <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-secondary-600 transition-colors" />
-        <input 
-          type="text" 
-          placeholder="Rechercher des supports, des tâches…" 
+        <input
+          type="text"
+          placeholder="Rechercher des supports, des tâches…"
           className="w-full bg-slate-100 rounded-full py-2.5 pl-10 pr-4 outline-none focus:ring-2 focus:ring-secondary-300 transition-all border border-transparent focus:bg-white"
         />
       </div>
