@@ -21,90 +21,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/(auth)/signin/page.js"
     ],
-    "/api/auth/[action]/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/auth/[action]/route.js"
-    ],
     "/schedule/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/schedule/page.js"
-    ],
-    "/api/planning/revision-sessions/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/planning/revision-sessions/route.js"
-    ],
-    "/api/planning/revision-suggest/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/planning/revision-suggest/route.js"
-    ],
-    "/study-plan/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/study-plan/page.js"
-    ],
-    "/upload/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/upload/page.js"
-    ],
-    "/subjects/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/subjects/page.js"
-    ],
-    "/api/subjects/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/subjects/route.js"
-    ],
-    "/(auth)/signup/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/(auth)/signup/page.js"
-    ],
-    "/subjects/[subjectId]/upload/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/subjects/[subjectId]/upload/page.js"
-    ],
-    "/api/subjects/[subjectId]/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/subjects/[subjectId]/route.js"
-    ],
-    "/subjects/[subjectId]/qcm/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/subjects/[subjectId]/qcm/page.js"
-    ],
-    "/api/subjects/[subjectId]/qcm/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/subjects/[subjectId]/qcm/route.js"
-    ],
-    "/subjects/[subjectId]/qcm/[qcmId]/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/subjects/[subjectId]/qcm/[qcmId]/page.js"
-    ],
-    "/api/qcms/[qcmId]/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/qcms/[qcmId]/route.js"
-    ],
-    "/api/qcms/[qcmId]/submit/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/qcms/[qcmId]/submit/route.js"
-    ],
-    "/api/qcms/[qcmId]/results/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/qcms/[qcmId]/results/route.js"
     ]
   }
 }

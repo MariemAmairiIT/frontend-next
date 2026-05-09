@@ -5,6 +5,10 @@ import './globals.css'; // Global Tailwind styles
 export const metadata = {
   title: "iTeam Study Planner",
   description: "Planificateur étudiant propulsé par l’IA",
+  icons: {
+    icon: "/images/planner-logo.png",
+   
+  },
 };
 
 export default function RootLayout({ children }) {

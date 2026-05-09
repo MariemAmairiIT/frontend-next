@@ -3,6 +3,11 @@ import { useEffect, useState } from "react";
 import SubjectFolder from "@/components/SubjectFolder";
 import Loader from "@/components/Loader";
 import { apiFetch } from "@/lib/apiClient";
+import Link from "next/link";
+import {
+  removeArchivedSubject,
+  upsertArchivedSubject,
+} from "@/lib/archivedSubjectsStore";
 
 export default function SubjectsPage() {
   const [subjects, setSubjects] = useState([]);
@@ -81,13 +86,40 @@ export default function SubjectsPage() {
     }
   }
 
-  function archiveSubject(subject) {
+  const [archiveError, setArchiveError] = useState(null);
+
+  async function archiveSubject(subject, archived = true) {
     const subjectId = String(subject?.id || "");
     if (!subjectId) return;
 
-    setSubjects((current) =>
-      current.filter((item) => String(item?.id || "") !== subjectId),
+    const label = archived ? "Archiver" : "Désarchiver";
+    const confirmed = window.confirm(
+      `${label} le dossier "${subject?.name || subjectId}" ?`,
     );
+    if (!confirmed) return;
+
+    setArchiveError(null);
+    try {
+      const updated = await apiFetch(
+        `/api/subjects/${encodeURIComponent(subjectId)}/archive`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ archived }),
+        },
+      );
+
+      if (updated?.archived) {
+        upsertArchivedSubject(updated);
+      } else {
+        removeArchivedSubject(subjectId);
+      }
+
+      // Reload list to reflect server state
+      await load();
+    } catch (err) {
+      setArchiveError(err?.message ? String(err.message) : String(err));
+    }
   }
 
   return (
@@ -95,7 +127,8 @@ export default function SubjectsPage() {
       <div className="flex flex-col gap-1">
         <h1 className=" text-red-900 font-bold text-2xl">Sujets</h1>
         <p className="text-sm font-bold text-blue-900">
-         Créez des dossiers de matières ou de sujets pour organiser vos révisions.
+          Créez des dossiers de matières ou de sujets pour organiser vos
+          révisions.
         </p>
       </div>
 
@@ -124,6 +157,12 @@ export default function SubjectsPage() {
             {creating ? "Création…" : "Créer"}
           </button>
         </form>
+      </div>
+
+      <div className="flex justify-end">
+        <Link href="/subjects/archived" className="btn-outline">
+          Voir archivés
+        </Link>
       </div>
 
       {loading ? (

@@ -62,6 +62,8 @@ function normalizeSubjects(payload) {
         name: typeof item.name === "string" && item.name ? item.name : id,
         fileCount: Number(item.fileCount || 0),
         qcmCount: Number(item.qcmCount || item.qcmsCount || 0),
+        // preserve archived flag when present on backend subject DTO
+        archived: Boolean(item.archived === true),
       };
     })
     .filter(Boolean);
@@ -89,6 +91,13 @@ export async function GET(request) {
   const baseUrl = new URL(API_ENDPOINTS.BASE_URL);
   const upstreamUrl = new URL(baseUrl);
   upstreamUrl.pathname = joinUrlPath(baseUrl.pathname, "/api/subjects");
+  // Preserve query string (e.g. ?archived=true)
+  try {
+    const reqUrl = new URL(request.url);
+    upstreamUrl.search = reqUrl.search;
+  } catch (e) {
+    // ignore
+  }
 
   let upstream;
   try {

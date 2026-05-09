@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { apiFetch } from "@/lib/apiClient";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Archive, FileQuestion, Trash2 } from "lucide-react";
@@ -16,7 +17,9 @@ const folderColors = [
 ];
 
 function getFolderColor(name = "") {
-  const key = String(name || "").trim().toLowerCase();
+  const key = String(name || "")
+    .trim()
+    .toLowerCase();
   let hash = 2166136261;
 
   for (let i = 0; i < key.length; i += 1) {
@@ -36,8 +39,7 @@ export default function SubjectFolder({
   const router = useRouter();
   const [menuPosition, setMenuPosition] = useState(null);
   const folderColor = getFolderColor(subject?.name || subject?.id);
-  const fileCount = Number(subject?.fileCount || 0);
-  const qcmCount = Number(subject?.qcmCount || 0);
+  const [qcmCount, setQcmCount] = useState(Number(subject?.qcmCount || 0));
   const uploadHref = `/subjects/${subject.id}/upload`;
 
   const menuOpen = Boolean(menuPosition);
@@ -65,6 +67,27 @@ export default function SubjectFolder({
       window.removeEventListener("scroll", closeMenu, true);
     };
   }, [menuOpen]);
+
+  useEffect(() => {
+    let mounted = true;
+    if (!subject?.id) return undefined;
+
+    async function load() {
+      try {
+        const data = await apiFetch(
+          `/api/subjects/${encodeURIComponent(subject.id)}/qcm`,
+        );
+        if (!mounted) return;
+        if (Array.isArray(data)) setQcmCount(data.length);
+      } catch (err) {
+      }
+    }
+
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, [subject?.id]);
 
   function openUpload() {
     router.push(uploadHref);
@@ -107,7 +130,9 @@ export default function SubjectFolder({
   function handleArchive(e) {
     e.stopPropagation();
     closeMenu();
-    onArchive?.(subject);
+    const currentlyArchived = Boolean(subject?.archived);
+    // Toggle archived state
+    onArchive?.(subject, !currentlyArchived);
   }
 
   return (
@@ -133,8 +158,15 @@ export default function SubjectFolder({
             >
               {subject.name}
             </div>
-            <div className="mt-1 text-xs text-slate-600">
-              {fileCount} fichier{fileCount > 1 ? "s" : ""} · {qcmCount} QCM
+            <div className="mt-1 flex items-center gap-2 text-xs text-slate-600">
+              <div>
+                 {qcmCount} QCM (s)
+              </div>
+              {subject?.archived ? (
+                <div className="text-xs rounded px-2 py-0.5 bg-yellow-50 text-yellow-800 border border-yellow-100">
+                  Archivé
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -178,7 +210,7 @@ export default function SubjectFolder({
             role="menuitem"
           >
             <Archive size={16} />
-            Archiver
+            {subject?.archived ? "Désarchiver" : "Archiver"}
           </button>
         </div>
       ) : null}

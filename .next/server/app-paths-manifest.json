@@ -1,8 +1,4 @@
 {
-  "/api/subjects/route": "app/api/subjects/route.js",
-  "/subjects/page": "app/subjects/page.js",
-  "/subjects/[subjectId]/upload/page": "app/subjects/[subjectId]/upload/page.js",
-  "/subjects/[subjectId]/qcm/page": "app/subjects/[subjectId]/qcm/page.js",
-  "/subjects/[subjectId]/qcm/[qcmId]/page": "app/subjects/[subjectId]/qcm/[qcmId]/page.js",
-  "/(auth)/signup/page": "app/(auth)/signup/page.js"
+  "/schedule/page": "app/schedule/page.js",
+  "/(auth)/signin/page": "app/(auth)/signin/page.js"
 }

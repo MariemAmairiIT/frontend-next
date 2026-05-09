@@ -72,32 +72,41 @@ const Sidebar = () => {
 
   const handleLogout = () => {
     clearAuthSession();
-    router.replace("/signin?message=deconnexion");
+    router.replace("/signin?message=Déconnexion");
   };
 
   const navItems = [
     { name: "Tableau de bord", path: "/", icon: LayoutDashboard },
     { name: "Emploi du temps", path: "/schedule", icon: Calendar },
-    { name: "Plan d’étude", path: "/study-plan", icon: BookOpen },
-    { name: "Importer l’emploi du temps", path: "/upload", icon: Upload },
+    { name: "Plan d'étude", path: "/study-plan", icon: BookOpen },
+    { name: "Importer l'emploi du temps", path: "/upload", icon: Upload },
     { name: "Sujets & QCM", path: "/subjects", icon: Folder },
   ];
 
   return (
-    <aside className="w-64 bg-primary-800 text-white min-h-screen flex flex-col fixed left-0 top-0 shadow-xl">
-      <div className="p-6 flex items-center gap-3">
-        <div className="bg-white p-1.5 rounded-lg overflow-hidden">
+    <aside className="w-72 bg-[#800020] text-white min-h-screen flex flex-col fixed left-0 top-0 shadow-xl">
+      <Link
+        href="/"
+        className="pt-5 flex items-center gap-3 transition-opacity hover:opacity-90"
+        aria-label="Retour au tableau de bord"
+      >
+        <div className="shrink-0">
           <Image
             src="/images/study-planner-logo.png"
             alt="Study Planner"
-            width={24}
-            height={24}
-            className="h-6 w-6 object-cover"
+            width={54}
+            height={54}
+            className="h-21 w-21 object-contain"
             priority
           />
         </div>
-        <h1 className="text-xl font-bold tracking-wider">Study Planner</h1>
-      </div>
+        <h1 className="text-xl font-extrabold">
+          <span className="">STUDY</span>{" "}
+          <span className="rounded bg-white/90 px-1.5 py-0.5 text-primary-900">
+            PLANNER
+          </span>
+        </h1>
+      </Link>
       <nav className="flex-1 px-4 mt-6">
         <ul className="space-y-2">
           {navItems.map((item) => {
@@ -118,10 +127,10 @@ const Sidebar = () => {
                   }}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
                     isActive
-                      ? "bg-primary-700/50 text-white shadow-inner font-medium border-l-4 border-secondary-400"
+                      ? "bg-primary-700/60 text-white shadow-inner font-medium border-l-4 border-secondary-300"
                       : isBlocked
-                        ? "text-primary-200/60 cursor-not-allowed opacity-70"
-                        : "text-primary-200 hover:bg-primary-700/30 hover:text-white"
+                        ? "text-primary-100/60 cursor-not-allowed opacity-70"
+                        : "text-primary-100 hover:bg-primary-700/40 hover:text-white"
                   }`}
                   aria-disabled={isBlocked}
                   title={
@@ -143,14 +152,14 @@ const Sidebar = () => {
       {/* Mini Profile */}
       <div className="p-4 m-4 bg-primary-900/50 rounded-xl border border-primary-700/50 space-y-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-secondary-800 flex items-center justify-center border-2 border-primary-500">
+          <div className="w-10 h-10 rounded-full bg-primary-700 flex items-center justify-center border-2 border-primary-400">
             <User className="w-5 h-5 text-white" />
           </div>
           <div className="flex-1 overflow-hidden">
             <p className="text-sm font-medium text-white truncate">
               {displayName}
             </p>
-            <p className="text-xs text-primary-300 truncate">
+            <p className="text-xs text-primary-200 truncate">
               {displaySubtitle}
             </p>
           </div>
@@ -158,7 +167,7 @@ const Sidebar = () => {
         <button
           type="button"
           onClick={handleLogout}
-          className="w-full px-3 py-2 rounded-lg bg-primary-700/70 text-white text-sm font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2"
+          className="w-full px-3 py-2 rounded-lg bg-primary-700/80 text-white text-sm font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2"
         >
           <LogOut className="w-4 h-4" />
           Se déconnecter
