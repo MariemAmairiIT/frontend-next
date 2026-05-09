@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -12,9 +11,14 @@ import {
   Folder,
   User,
   LogOut,
+  CalendarRange,
+  GraduationCap,
+  Up
+
 } from "lucide-react";
 import { loadExtractionState } from "@/lib/planningStorage";
 import { clearAuthSession, getCurrentUser } from "@/lib/studentAuth";
+
 
 const Sidebar = () => {
   const pathname = usePathname();
@@ -76,11 +80,17 @@ const Sidebar = () => {
   };
 
   const navItems = [
-    { name: "Tableau de bord", path: "/", icon: LayoutDashboard },
-    { name: "Emploi du temps", path: "/schedule", icon: Calendar },
+     { name: 'Tableau de bord', path: '/dashboard', icon: LayoutDashboard },
+     { name: 'Importer l\'emploi du temps', path: '/upload', icon: Upload },
+     { name: 'Emploi du temps', path: '/schedule', icon: Calendar },
     { name: "Plan d'étude", path: "/study-plan", icon: BookOpen },
-    { name: "Importer l'emploi du temps", path: "/upload", icon: Upload },
+     { name: 'Emploi des examens', path: '/exam-schedule', icon: CalendarRange },
+    { name: 'Gestion des examens', path: '/exams', icon: GraduationCap },
     { name: "Sujets & QCM", path: "/subjects", icon: Folder },
+   
+    
+   
+    
   ];
 
   return (
@@ -170,7 +180,7 @@ const Sidebar = () => {
           className="w-full px-3 py-2 rounded-lg bg-primary-700/80 text-white text-sm font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2"
         >
           <LogOut className="w-4 h-4" />
-          Se déconnecter
+          Se deconnecter
         </button>
       </div>
     </aside>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import RevisionAvailabilityModal from "@/components/RevisionAvailabilityModal";
 import RevisionCoefficientsModal from "@/components/RevisionCoefficientsModal";
@@ -9,6 +10,8 @@ import {
   backendPlanningToUiEvents,
   DAY_UI_TO_BACKEND,
   loadPlanningFromStorage,
+  loadPlanningMeta,
+  savePlanningMeta,
   minutesToTime,
   timeToMinutes,
   saveRevisionPrefs,
@@ -18,6 +21,7 @@ import {
   uiEventsToBackendPlanning,
 } from "@/lib/planningStorage";
 import { apiFetch } from "@/lib/apiClient";
+
 
 const BASE_START_MIN = 8 * 60;
 const BASE_END_MIN = 23 * 60;
@@ -55,6 +59,57 @@ const REVISION_DAYS = [...DEFAULT_WEEK_DAYS, ...WEEKEND_DAYS];
 const DEFAULT_BREAK_MINUTES = 10;
 const AI_RATE_LIMIT_COOLDOWN_MS = 15 * 1000;
 const AI_PAYLOAD_CACHE_TTL_MS = 90 * 1000;
+const WEEKDAY_INDEX = {
+  Monday: 0,
+  Tuesday: 1,
+  Wednesday: 2,
+  Thursday: 3,
+  Friday: 4,
+  Saturday: 5,
+  Sunday: 6,
+};
+const PLANNING_TYPE = {
+  NORMAL: "NORMAL",
+  EXAM: "EXAM",
+};
+
+const addDays = (date, deltaDays) => {
+  const next = new Date(date);
+  next.setDate(next.getDate() + deltaDays);
+  return next;
+};
+
+const getMondayOfWeek = (inputDate) => {
+  const date = new Date(inputDate);
+  date.setHours(0, 0, 0, 0);
+  const jsDay = date.getDay(); // Sunday=0 ... Saturday=6
+  const distanceToMonday = (jsDay + 6) % 7;
+  date.setDate(date.getDate() - distanceToMonday);
+  return date;
+};
+
+const formatDateIso = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const parseIsoDate = (value) => {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value.trim())) {
+    return null;
+  }
+  const parsed = new Date(`${value.trim()}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return null;
+  parsed.setHours(0, 0, 0, 0);
+  return parsed;
+};
+
+const formatShortFrDate = (date) =>
+  new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+  }).format(date);
 
 const defaultDaySlot = (day) => {
   const isWeekday = DEFAULT_WEEK_DAYS.includes(day);
@@ -376,6 +431,28 @@ const isRevisionEvent = (ev) => {
   return color.includes("bg-purple-100");
 };
 
+const buildExamPriorityWeights = (subjects, coefficients, orderedExamSchedule) => {
+  const weights = Object.fromEntries(
+    (Array.isArray(subjects) ? subjects : []).map((subject) => [
+      subject,
+      Math.max(1, Number(coefficients?.[subject]) || 1),
+    ]),
+  );
+
+  const totalExams = Array.isArray(orderedExamSchedule)
+    ? orderedExamSchedule.length
+    : 0;
+
+  orderedExamSchedule.forEach((exam, index) => {
+    const subject = String(exam?.subject || "").trim();
+    if (!subject) return;
+    const examPriorityBonus = Math.max(1, totalExams - index) * 3;
+    weights[subject] = Math.max(1, Number(weights[subject]) || 1) + examPriorityBonus;
+  });
+
+  return weights;
+};
+
 const allocateSubjectCounts = (subjects, coefficients, capacity) => {
   const totalCapacity = Math.max(0, Math.floor(capacity));
   if (!Array.isArray(subjects) || subjects.length === 0 || totalCapacity <= 0) {
@@ -425,12 +502,15 @@ const allocateSubjectCounts = (subjects, coefficients, capacity) => {
 };
 
 const buildRevisionEventsFrontend = ({
+  planningType,
   subjects,
   coefficients,
   availabilityUi,
   existingNonRevision,
   sessionDuration,
   breakMinutes,
+  weekDatesByDay,
+  orderedExamSchedule = [],
 }) => {
   const durationMin = Math.max(15, Math.floor(sessionDuration || 60));
   const pauseMin = clampNumber(
@@ -494,20 +574,60 @@ const buildRevisionEventsFrontend = ({
     };
   }
 
+  const weightedCoefficients =
+    planningType === PLANNING_TYPE.EXAM && orderedExamSchedule.length > 0
+      ? buildExamPriorityWeights(subjects, coefficients, orderedExamSchedule)
+      : coefficients;
+
   const counts = allocateSubjectCounts(
     subjects,
-    coefficients,
+    weightedCoefficients,
     candidateSlots.length,
   );
   const remaining = { ...counts };
 
-  const pickSubject = () => {
+  const examRankBySubject = Object.fromEntries(
+    orderedExamSchedule.map((exam, index) => [String(exam.subject || "").trim(), index + 1]),
+  );
+
+  const slotExamUrgency = (subject, slot) => {
+    const rank = examRankBySubject[String(subject || "").trim()];
+    if (planningType !== PLANNING_TYPE.EXAM || !rank) return 0;
+
+    const slotDateBase =
+      weekDatesByDay && slot?.day ? weekDatesByDay[slot.day] : null;
+    const examInfo = orderedExamSchedule.find(
+      (item) => String(item?.subject || "").trim() === String(subject || "").trim(),
+    );
+    const slotDate =
+      slotDateBase instanceof Date
+        ? addDays(slotDateBase, 0)
+        : null;
+    const examDate = parseIsoDate(examInfo?.examDate || "");
+
+    if (!(slotDate instanceof Date) || !(examDate instanceof Date)) {
+      return Math.max(0, 50 - rank * 5);
+    }
+
+    const diffDays = Math.round(
+      (examDate.getTime() - slotDate.getTime()) / (24 * 60 * 60 * 1000),
+    );
+
+    return Math.max(0, 40 - diffDays) + Math.max(0, 20 - rank * 2);
+  };
+
+  const pickSubject = (slot) => {
     let best = null;
     for (const subject of subjects) {
       const left = remaining[subject] || 0;
       if (left <= 0) continue;
-      if (!best || left > best.left) {
-        best = { subject, left };
+      const urgency = slotExamUrgency(subject, slot);
+      if (
+        !best ||
+        urgency > best.urgency ||
+        (urgency === best.urgency && left > best.left)
+      ) {
+        best = { subject, left, urgency };
       }
     }
     if (best) {
@@ -519,7 +639,7 @@ const buildRevisionEventsFrontend = ({
   };
 
   const events = candidateSlots.map((slot) => {
-    const subject = pickSubject();
+    const subject = pickSubject(slot);
     return {
       id: makeId(),
       day: slot.day,
@@ -612,6 +732,8 @@ export default function ScheduleView() {
   const [revisionAvailability, setRevisionAvailability] = useState(() =>
     defaultRevisionAvailability(),
   );
+  /** Emploi « examens » vit sur /exam-schedule ; ici uniquement la semaine type cours/révisions. */
+  const planningType = PLANNING_TYPE.NORMAL;
   const [revisionCoefficients, setRevisionCoefficients] = useState({});
   const [revisionSessionDuration, setRevisionSessionDuration] = useState(60);
   const [revisionError, setRevisionError] = useState(null);
@@ -653,6 +775,7 @@ export default function ScheduleView() {
   };
 
   const [events, setEvents] = useState([]);
+  const [persistWarning, setPersistWarning] = useState(null);
 
   const selectedSessionEvent = useMemo(() => {
     if (!sessionModalEventId) return null;
@@ -777,7 +900,7 @@ export default function ScheduleView() {
     [events],
   );
 
-  const subjects = useMemo(() => {
+  const normalSubjects = useMemo(() => {
     const set = new Set(
       nonRevisionEvents
         .map((e) => String(e?.subject ?? "").trim())
@@ -785,6 +908,8 @@ export default function ScheduleView() {
     );
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [nonRevisionEvents]);
+
+  const subjects = normalSubjects;
 
   const revisionCount = useMemo(
     () =>
@@ -799,9 +924,38 @@ export default function ScheduleView() {
     [events],
   );
 
+  const todayWeekStart = useMemo(() => getMondayOfWeek(new Date()), []);
+  const selectedWeekStart = useMemo(
+    () => addDays(todayWeekStart, currentWeek * 7),
+    [todayWeekStart, currentWeek],
+  );
+  const selectedWeekEnd = useMemo(
+    () => addDays(selectedWeekStart, 6),
+    [selectedWeekStart],
+  );
+  const weekRangeLabel = useMemo(
+    () =>
+      `Du ${formatShortFrDate(selectedWeekStart)} au ${formatShortFrDate(selectedWeekEnd)}`,
+    [selectedWeekStart, selectedWeekEnd],
+  );
+
+  const weekDatesByDay = useMemo(() => {
+    const entries = Object.entries(WEEKDAY_INDEX).map(([day, index]) => [
+      day,
+      addDays(selectedWeekStart, index),
+    ]);
+    return Object.fromEntries(entries);
+  }, [selectedWeekStart]);
+
+  const orderedExamSchedule = useMemo(() => [], []);
+  const examModeBlockedReason = null;
+  const revisionGenerationBaseEvents = nonRevisionEvents;
+
   useEffect(() => {
     if (!storageLoaded) return;
     saveRevisionPrefs({
+      planningType: PLANNING_TYPE.NORMAL,
+      examWeekStartDate: "",
       availability: normalizedAvailability,
       coefficients: revisionCoefficients,
       sessionDuration: revisionSessionDuration,
@@ -877,8 +1031,48 @@ export default function ScheduleView() {
   ]);
 
   useEffect(() => {
+    try {
+      if (typeof window !== "undefined") {
+        const w = window.sessionStorage.getItem("sp_timetable_persist_warning");
+        if (w) {
+          setPersistWarning(w);
+          window.sessionStorage.removeItem("sp_timetable_persist_warning");
+        }
+      }
+    } catch {
+      // ignore
+    }
+
     const refreshFromStorage = async () => {
-      const stored = loadPlanningFromStorage();
+      let stored = loadPlanningFromStorage();
+      const localImported =
+        Array.isArray(stored?.events) && stored.events.length > 0;
+
+      if (!localImported) {
+        try {
+          const remote = await apiFetch("/api/me/timetables/latest");
+          const remoteEvents = remote?.events;
+          if (Array.isArray(remoteEvents) && remoteEvents.length > 0) {
+            stored = {
+              id: remote.id,
+              timetableId: remote.id,
+              timezone: remote.timezone || "Europe/Paris",
+              warnings: remote.warnings || [],
+              events: remoteEvents,
+              sourceFileName: remote.sourceFileName,
+            };
+            savePlanningToStorage(stored);
+            const meta = loadPlanningMeta() || {};
+            savePlanningMeta({
+              ...meta,
+              timetableId: remote.id,
+            });
+          }
+        } catch {
+          // Not signed in or no timetable in MongoDB
+        }
+      }
+
       const imported =
         Array.isArray(stored?.events) && stored.events.length > 0;
 
@@ -1007,9 +1201,9 @@ export default function ScheduleView() {
       setRevisionError("Aucune matière détectée dans votre planning.");
       return false;
     }
-
     const durationMin = clamp(Number(revisionSessionDuration) || 60, 15, 180);
-    const existingNonRevision = nonRevisionEvents;
+    const existingNonRevision = revisionGenerationBaseEvents;
+    const persistedNonRevision = nonRevisionEvents;
 
     const availability = Object.fromEntries(
       REVISION_DAYS.map((day) => {
@@ -1091,6 +1285,14 @@ export default function ScheduleView() {
 
     const payload = {
       timezone: planningMeta?.timezone || "Europe/Paris",
+      planningType: PLANNING_TYPE.NORMAL,
+      orderedExamSchedule,
+      calendarContext: {
+        selectedWeekStartDate: formatDateIso(selectedWeekStart),
+        selectedWeekEndDate: formatDateIso(selectedWeekEnd),
+      },
+      revisionPolicy: { mode: "DEFAULT_WEEKLY" },
+
       sessionDurationMinutes: durationMin,
       breakMinutes,
       availability,
@@ -1114,7 +1316,7 @@ export default function ScheduleView() {
         ...(cache.warnings || []),
       ]);
       setEvents(
-        [...existingNonRevision, ...cache.planned].map(normalizeUiEvent),
+        [...persistedNonRevision, ...cache.planned].map(normalizeUiEvent),
       );
       aiInFlightRef.current = false;
       return true;
@@ -1122,6 +1324,38 @@ export default function ScheduleView() {
 
     setRevisionAiLoading(true);
     try {
+      // Fetch aiPromptContext from backend
+      let aiPromptContext = null;
+      try {
+        const promptContextRequest = {
+          planningType: PLANNING_TYPE.NORMAL,
+          selectedWeekStartDate: formatDateIso(selectedWeekStart),
+          selectedWeekEndDate: formatDateIso(selectedWeekEnd),
+          examWeekStartDate: null,
+          revisionWeekStartDate: null,
+          revisionWeekEndDate: null,
+          orderedExamSchedule,
+        };
+
+        const promptContextResponse = await apiFetch(
+          "/api/planning/revision-prompt-context",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(promptContextRequest),
+          }
+        );
+
+        aiPromptContext = promptContextResponse?.promptContext || null;
+      } catch (promptErr) {
+        console.warn("Failed to fetch aiPromptContext, continuing without it", promptErr);
+      }
+
+      // Add aiPromptContext to payload if available
+      if (aiPromptContext) {
+        payload.aiPromptContext = aiPromptContext;
+      }
+
       let data = null;
       try {
         data = await apiFetch("/api/planning/revision-suggest", {
@@ -1142,12 +1376,15 @@ export default function ScheduleView() {
         const detail = parseBackendErrorDetail(errorData, rawText, status);
 
         const fallback = buildRevisionEventsFrontend({
+          planningType,
           subjects,
           coefficients,
           availabilityUi: normalizedAvailability,
           existingNonRevision,
           sessionDuration: durationMin,
           breakMinutes,
+          weekDatesByDay,
+          orderedExamSchedule,
         });
 
         if (fallback.events.length > 0) {
@@ -1160,7 +1397,7 @@ export default function ScheduleView() {
             warnings: nextWarnings,
           };
           setEvents(
-            [...existingNonRevision, ...fallback.events].map(normalizeUiEvent),
+            [...persistedNonRevision, ...fallback.events].map(normalizeUiEvent),
           );
           return true;
         }
@@ -1190,16 +1427,19 @@ export default function ScheduleView() {
         warnings: Array.isArray(data.warnings) ? data.warnings : [],
       };
 
-      setEvents([...existingNonRevision, ...planned].map(normalizeUiEvent));
+      setEvents([...persistedNonRevision, ...planned].map(normalizeUiEvent));
       return true;
     } catch (e) {
       const fallback = buildRevisionEventsFrontend({
+        planningType,
         subjects,
         coefficients,
         availabilityUi: normalizedAvailability,
         existingNonRevision,
         sessionDuration: durationMin,
         breakMinutes,
+        weekDatesByDay,
+        orderedExamSchedule,
       });
 
       if (fallback.events.length > 0) {
@@ -1216,7 +1456,7 @@ export default function ScheduleView() {
           warnings: nextWarnings,
         };
         setEvents(
-          [...existingNonRevision, ...fallback.events].map(normalizeUiEvent),
+          [...persistedNonRevision, ...fallback.events].map(normalizeUiEvent),
         );
         return true;
       }
@@ -1240,6 +1480,15 @@ export default function ScheduleView() {
       ? [...DEFAULT_WEEK_DAYS, ...WEEKEND_DAYS]
       : DEFAULT_WEEK_DAYS;
   }, [events]);
+
+  const visibleDaysWithDates = useMemo(
+    () =>
+      visibleDays.map((day) => ({
+        day,
+        date: weekDatesByDay?.[day] ?? null,
+      })),
+    [visibleDays, weekDatesByDay],
+  );
 
   const eventsByDay = useMemo(() => {
     const map = Object.fromEntries(visibleDays.map((d) => [d, []]));
@@ -1454,9 +1703,14 @@ export default function ScheduleView() {
             >
               <ChevronLeft className="w-5 h-5 text-slate-700" />
             </button>
-            <span className="text-sm font-medium text-slate-700">
-              Semaine {currentWeek + 1}
-            </span>
+            <div className="text-right">
+              <p className="text-sm font-medium text-slate-700">{weekRangeLabel}</p>
+              <p className="text-xs text-slate-500">
+                {currentWeek === 0
+                  ? "Semaine courante"
+                  : `${currentWeek > 0 ? "+" : ""}${currentWeek} semaine${Math.abs(currentWeek) > 1 ? "s" : ""}`}
+              </p>
+            </div>
             <button
               onClick={() => setCurrentWeek(currentWeek + 1)}
               className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
@@ -1464,6 +1718,15 @@ export default function ScheduleView() {
             >
               <ChevronRight className="w-5 h-5 text-slate-700" />
             </button>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Link
+              href="/exam-schedule"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-primary-800 hover:bg-slate-50"
+            >
+              Mon emploi des examens
+            </Link>
           </div>
 
           <div className="flex items-center gap-2">
@@ -1503,6 +1766,22 @@ export default function ScheduleView() {
           </div>
         </div>
       </div>
+
+      {persistWarning && (
+        <div className="bg-white border border-amber-200 rounded-lg p-3 text-sm text-amber-900 flex items-start justify-between gap-3">
+          <p>
+            <span className="font-semibold">Sauvegarde serveur : </span>
+            {persistWarning}
+          </p>
+          <button
+            type="button"
+            onClick={() => setPersistWarning(null)}
+            className="shrink-0 rounded-md border border-amber-300 px-2 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-50"
+          >
+            Fermer
+          </button>
+        </div>
+      )}
 
       {revisionError && (
         <div className="bg-white border border-red-200 rounded-lg p-3 text-sm text-red-700">
@@ -1705,14 +1984,15 @@ export default function ScheduleView() {
               Heure
             </span>
           </div>
-          {visibleDays.map((day) => (
+          {visibleDaysWithDates.map(({ day, date }) => (
             <div
               key={day}
               className="p-4 border-r border-slate-200 last:border-r-0 text-center"
             >
-              <span className="font-medium text-slate-800">
-                {dayLabel[day] ?? day}
-              </span>
+              <p className="font-medium text-slate-800">{dayLabel[day] ?? day}</p>
+              {date instanceof Date && (
+                <p className="text-xs text-slate-500 mt-1">{formatShortFrDate(date)}</p>
+              )}
             </div>
           ))}
         </div>
@@ -1730,7 +2010,7 @@ export default function ScheduleView() {
             ))}
           </div>
 
-          {visibleDays.map((day) => (
+          {visibleDaysWithDates.map(({ day }) => (
             <div
               key={day}
               data-day={day}

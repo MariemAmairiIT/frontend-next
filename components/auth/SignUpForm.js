@@ -92,7 +92,7 @@ export default function SignUpForm() {
           value={formData.name}
           onChange={handleChange}
           className=" mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg transition duration-200 ease-in-out focus:outline-none focus:border-[#8B1538] focus:ring-1 focus:ring-[#8B1538] focus:shadow-md placeholder:text-gray-500 text-black"
-          placeholder="Salma Ben Brahim"
+          placeholder="Etudiant"
         />
       </div>
 

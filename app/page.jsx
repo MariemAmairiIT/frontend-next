@@ -1,123 +1,244 @@
 'use client';
-import React, { useMemo, useState, useEffect } from 'react';
-import { Calendar, Clock, BookOpen, AlertCircle } from 'lucide-react';
-import { getCurrentUser } from '@/lib/studentAuth';
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { BookOpen, Brain, CalendarCheck, Sparkles, GraduationCap, ChevronRight } from 'lucide-react';
 
-const Dashboard = () => {
-  const [currentUser, setCurrentUser] = useState(null);
+const FEATURES = [
+  { icon: Brain, label: 'Planification IA', desc: 'Votre emploi du temps optimisé automatiquement.' },
+  { icon: CalendarCheck, label: 'Suivi des révisions', desc: 'Ne ratez plus aucun examen important.' },
+  { icon: GraduationCap, label: 'Objectifs clairs', desc: 'Visualisez votre progression en temps réel.' },
+];
 
-  useEffect(() => {
-    setCurrentUser(getCurrentUser());
-  }, []);
+const PARTICLES = Array.from({ length: 18 }, (_, i) => ({
+  id: i,
+  size: Math.random() * 6 + 3,
+  x: Math.random() * 100,
+  delay: Math.random() * 4,
+  duration: Math.random() * 8 + 10,
+}));
 
-  const userDisplayName = useMemo(() => {
-    const fromName = String(currentUser?.name || currentUser?.fullName || '').trim();
-    if (fromName) return fromName;
-
-    const email = String(currentUser?.email || '').trim();
-    if (email.includes('@')) return email.split('@')[0];
-
-    return 'étudiant';
-  }, [currentUser]);
-
+function FloatingParticle({ size, x, delay, duration }) {
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold text-slate-900">Bon retour, {userDisplayName} !</h2>
-          <p className="text-slate-500 mt-1">Voici ce qui se passe pour vos études aujourd’hui.</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Stats Cards */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary-50 rounded-full group-hover:scale-110 transition-transform"></div>
-          <div className="relative">
-            <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center mb-4 text-primary-700">
-              <Calendar className="w-6 h-6" />
-            </div>
-            <h3 className="text-3xl font-bold text-slate-900 mb-1">4</h3>
-            <p className="text-slate-500 font-medium">Cours aujourd’hui</p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-secondary-50 rounded-full group-hover:scale-110 transition-transform"></div>
-          <div className="relative">
-            <div className="w-12 h-12 bg-secondary-100 rounded-xl flex items-center justify-center mb-4 text-secondary-700">
-              <BookOpen className="w-6 h-6" />
-            </div>
-            <h3 className="text-3xl font-bold text-slate-900 mb-1">2h 30m</h3>
-            <p className="text-slate-500 font-medium">Étude planifiée</p>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-primary-800 to-primary-900 rounded-2xl p-6 shadow-md text-white relative overflow-hidden">
-          <div className="absolute right-0 bottom-0 opacity-10">
-            <AlertCircle className="w-32 h-32 -mr-8 -mb-8" />
-          </div>
-          <div className="relative">
-            <h3 className="text-lg font-bold mb-2">Examen à venir</h3>
-            <p className="text-primary-200 text-sm mb-4">Partiel d’architecture logicielle</p>
-            <div className="flex items-end justify-between">
-              <span className="text-3xl font-bold">Dans 3 jours</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Today's Schedule Mini-view */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-slate-800">Programme d’aujourd’hui</h3>
-            <button className="text-secondary-600 text-sm font-medium hover:underline">Tout voir</button>
-          </div>
-          <div className="space-y-4">
-            {[
-              { title: 'Développement web', time: '09:00 - 10:30', type: 'Cours', color: 'bg-blue-100 text-blue-700' },
-              { title: 'Structures de données', time: '11:00 - 12:30', type: 'Cours', color: 'bg-purple-100 text-purple-700' },
-              { title: 'Réviser les hooks React', time: '14:00 - 15:00', type: 'Étude', color: 'bg-primary-100 text-primary-700' },
-            ].map((item, idx) => (
-              <div key={idx} className="flex items-start gap-4 p-4 rounded-xl border border-slate-50 hover:bg-slate-50 transition-colors">
-                <div className={`mt-0.5 px-2.5 py-1 rounded text-xs font-bold ${item.color}`}>
-                  {item.type}
-                </div>
-                <div>
-                  <h4 className="font-semibold text-slate-800">{item.title}</h4>
-                  <div className="flex items-center text-slate-500 text-sm mt-1">
-                    <Clock className="w-3.5 h-3.5 mr-1" />
-                    {item.time}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* AI Recommendations */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-slate-800">Recommandations IA</h3>
-          </div>
-          <div className="space-y-4">
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex gap-4">
-              <div className="shrink-0 w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center">
-                ✨
-              </div>
-              <div>
-                <h4 className="font-semibold text-slate-800 mb-1">Optimisez votre matinée</h4>
-                <p className="text-sm text-slate-600">Vous avez un créneau libre demain entre 9 h et 11 h. Ajouter une session de révision de maths serait très efficace avant votre cours de l’après‑midi.</p>
-                <button className="mt-3 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors text-slate-700">Ajouter au plan</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <motion.div
+      className="absolute rounded-full pointer-events-none"
+      style={{
+        width: size,
+        height: size,
+        left: `${x}%`,
+        bottom: '-10px',
+        background: x % 3 === 0
+          ? 'rgba(194,69,82,0.35)'
+          : x % 3 === 1
+          ? 'rgba(41,128,198,0.35)'
+          : 'rgba(255,255,255,0.25)',
+        filter: 'blur(1px)',
+      }}
+      animate={{
+        y: [0, -window.innerHeight - 40],
+        opacity: [0, 0.7, 0.7, 0],
+        scale: [1, 1.2, 0.9, 1],
+      }}
+      transition={{
+        duration,
+        delay,
+        repeat: Infinity,
+        ease: 'linear',
+      }}
+    />
   );
+}
+
+const containerVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.15 } },
 };
 
-export default Dashboard;
+const fadeUp = {
+  hidden: { opacity: 0, y: 40 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } },
+};
 
+const fadeIn = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { duration: 0.8, ease: 'easeOut' } },
+};
+
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.85 },
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
+};
+
+export default function HomePage() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  return (
+    <div
+      className="relative h-screen flex flex-col overflow-hidden"
+      style={{
+        backgroundImage: 'url(/images/background.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+      }}
+    >
+      {/* Layered overlay: deep burgundy → navy vignette */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#3f040a]/80 via-[#800020]/60 to-[#000080]/75 z-0" />
+      {/* Radial highlight at top-center */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_50%_0%,rgba(194,69,82,0.22)_0%,transparent_70%)] z-0" />
+      {/* Subtle noise texture overlay */}
+      <div className="absolute inset-0 opacity-[0.04] z-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJuIj48ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iMC45IiBzdGl0Y2hUaWxlcz0ic3RpdGNoIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSIzMDAiIGZpbHRlcj0idXJsKCNuKSIgb3BhY2l0eT0iMSIvPjwvc3ZnPg==')]" />
+
+      {/* Floating particles */}
+      {mounted && PARTICLES.map((p) => (
+        <FloatingParticle key={p.id} {...p} />
+      ))}
+
+      {/* Glowing orb top-left */}
+      <motion.div
+        className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full z-0 pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(194,69,82,0.18) 0%, transparent 70%)' }}
+        animate={{ scale: [1, 1.08, 1], opacity: [0.7, 1, 0.7] }}
+        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      {/* Glowing orb bottom-right */}
+      <motion.div
+        className="absolute -bottom-40 -right-40 w-[600px] h-[600px] rounded-full z-0 pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(41,128,198,0.18) 0%, transparent 70%)' }}
+        animate={{ scale: [1, 1.1, 1], opacity: [0.6, 0.9, 0.6] }}
+        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+      />
+
+      {/* Nav bar */}
+      <motion.nav
+        className="relative z-10 flex items-center justify-between px-8 py-5"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+      >
+        <div className="flex items-center gap-2.5">
+          <div className="bg-white/10 backdrop-blur-sm p-2 rounded-xl border border-white/20">
+            <BookOpen className="w-5 h-5 text-white" />
+          </div>
+          <span className="text-white font-bold text-lg tracking-wide">Study Planner</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/signin"
+            className="px-5 py-2 text-sm font-semibold text-white/90 hover:text-white rounded-xl border border-white/20 hover:border-white/40 hover:bg-white/10 transition-all duration-200 backdrop-blur-sm"
+          >
+            Connexion
+          </Link>
+          <Link
+            href="/signup"
+            className="px-5 py-2 text-sm font-semibold bg-white text-[#800020] rounded-xl hover:bg-primary-50 transition-all duration-200 shadow-md hover:shadow-lg"
+          >
+            S&apos;inscrire
+          </Link>
+        </div>
+      </motion.nav>
+
+      {/* Hero */}
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-4 py-16">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="max-w-3xl mx-auto flex flex-col items-center gap-6"
+        >
+          {/* Badge */}
+          <motion.div variants={fadeUp} className="flex flex-wrap justify-center gap-3">
+            {FEATURES.map(({ icon: Icon, label }) => (
+              <div key={label} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur border border-white/20 text-white/80 text-sm font-medium">
+                <Icon className="w-4 h-4 text-pink-300" />
+                {label}
+              </div>
+            ))}
+          </motion.div>
+
+          {/* Headline */}
+          <motion.div variants={fadeUp} className="space-y-2">
+            <h1 className="text-6xl md:text-7xl font-extrabold text-white leading-tight tracking-tight drop-shadow-xl">
+              Étudiez{' '}
+              <span
+                className="relative inline-block"
+                style={{
+                  background: 'linear-gradient(135deg, #f3cbd0 0%, #e8a6ad 40%, #4f9bdb 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}
+              >
+                plus malin
+              </span>
+            </h1>
+            <h1 className="text-6xl md:text-7xl font-extrabold text-white leading-tight tracking-tight drop-shadow-xl">
+              pas plus dur.
+            </h1>
+          </motion.div>
+
+          {/* Sub-headline */}
+          <motion.p
+            variants={fadeUp}
+            className="text-lg md:text-xl text-white/70 max-w-xl leading-relaxed"
+          >
+            iTeam Study Planner analyse votre emploi du temps, optimise vos révisions et vous aide à atteindre vos objectifs académiques — automatiquement.
+          </motion.p>
+
+          {/* CTA Buttons */}
+          <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center gap-4 mt-2">
+            <Link href="/signup">
+              <motion.div
+                className="relative group flex items-center gap-2 px-8 py-4 rounded-2xl text-base font-bold text-white shadow-2xl overflow-hidden cursor-pointer"
+                style={{ background: 'linear-gradient(135deg, #800020 0%, #c24552 100%)' }}
+                whileHover={{ scale: 1.04, y: -2 }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+              >
+                <motion.div
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  style={{ background: 'linear-gradient(135deg, #c24552 0%, #800020 100%)' }}
+                />
+                <span className="relative z-10">Commencer gratuitement</span>
+                <ChevronRight className="relative z-10 w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
+                {/* Shimmer effect */}
+                <motion.div
+                  className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                  initial={{ x: '-100%' }}
+                  animate={{ x: '200%' }}
+                  transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 2, ease: 'linear' }}
+                />
+              </motion.div>
+            </Link>
+
+            <Link href="/signin">
+              <motion.div
+                className="flex items-center gap-2 px-8 py-4 rounded-2xl text-base font-bold text-white border-2 border-white/30 hover:border-white/60 hover:bg-white/10 backdrop-blur-sm cursor-pointer transition-colors duration-200"
+                whileHover={{ scale: 1.04, y: -2 }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+              >
+                Se connecter
+              </motion.div>
+            </Link>
+          </motion.div>
+
+          {/* Trust badge */}
+        
+        </motion.div>
+
+
+      </main>
+
+      {/* Bottom decorative line */}
+      <motion.div
+        className="relative z-10 mx-auto mb-6 h-px w-48 rounded-full"
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)' }}
+        initial={{ scaleX: 0, opacity: 0 }}
+        animate={{ scaleX: 1, opacity: 1 }}
+        transition={{ delay: 1.2, duration: 0.8 }}
+      />
+    </div>
+  );
+}

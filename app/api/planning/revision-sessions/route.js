@@ -42,7 +42,7 @@ function buildTargetUrl() {
     "http://localhost:8081";
   const backendPath =
     process.env.PLANNING_REVISION_SESSIONS_PATH ||
-    "/students/planning/revision-sessions";
+    "/api/planning/revision-sessions";
 
   const targetUrl = new URL(backendBaseUrl);
   targetUrl.pathname = joinUrlPath(targetUrl.pathname, backendPath);

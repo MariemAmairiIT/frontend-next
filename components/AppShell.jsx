@@ -7,7 +7,7 @@ import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import { getAuthHeader } from "@/lib/studentAuth";
 
-const AUTH_ROUTES = new Set(["/signin", "/signup"]);
+const AUTH_ROUTES = new Set(["/", "/signin", "/signup"]);
 
 export default function AppShell({ children }) {
   const pathname = usePathname();

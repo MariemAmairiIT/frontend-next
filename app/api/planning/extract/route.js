@@ -12,6 +12,44 @@ function joinUrlPath(basePathname, appendPath) {
 }
 
 export async function POST(request) {
+  console.log(
+    "EXTRACT POST handler hit:",
+    new URL(request.url).searchParams.get("timezone"),
+    request.headers.get("content-type")
+  );
+
+  console.log("parsing formData...");
+
+  let formData;
+  try {
+    formData = await request.formData();
+    console.log("formData parsed");
+  } catch (e) {
+    console.log("formData error:", e);
+    return Response.json(
+      {
+        code: "INVALID_FORM_DATA",
+        message: "Invalid multipart form-data",
+      },
+      { status: 400 }
+    );
+  }
+
+  const file = formData.get("file");
+  console.log("file:", !!file, file?.name || "no name");
+
+  if (!file) {
+    return Response.json(
+      {
+        code: "FILE_REQUIRED",
+        message: "Missing file field",
+      },
+      { status: 400 }
+    );
+  }
+
+  console.log("proxying to backend...");
+
   const { searchParams } = new URL(request.url);
   const timezone = searchParams.get("timezone") || "Europe/Paris";
 
@@ -19,14 +57,16 @@ export async function POST(request) {
     process.env.PLANNING_BACKEND_URL ||
     process.env.BACKEND_URL ||
     "http://localhost:8081";
+
   const backendPath =
-    process.env.PLANNING_EXTRACT_PATH || "/students/planning/parse";
+    process.env.PLANNING_EXTRACT_PATH || "/api/planning/parse";
 
   const upstreamHeaders = new Headers();
 
   const authorization =
     request.headers.get("authorization") ||
     process.env.PLANNING_BACKEND_AUTHORIZATION;
+
   if (authorization) upstreamHeaders.set("authorization", authorization);
 
   const apiKey = process.env.PLANNING_BACKEND_API_KEY;
@@ -38,30 +78,6 @@ export async function POST(request) {
 
   const cookie = request.headers.get("cookie");
   if (cookie) upstreamHeaders.set("cookie", cookie);
-
-  let formData;
-  try {
-    formData = await request.formData();
-  } catch {
-    return Response.json(
-      {
-        code: "INVALID_FORM_DATA",
-        message: "Invalid multipart form-data",
-      },
-      { status: 400 },
-    );
-  }
-
-  const file = formData.get("file");
-  if (!file) {
-    return Response.json(
-      {
-        code: "FILE_REQUIRED",
-        message: "Missing file field",
-      },
-      { status: 400 },
-    );
-  }
 
   const forwardForm = new FormData();
   forwardForm.set("file", file);
@@ -84,7 +100,7 @@ export async function POST(request) {
         message: "Backend is unreachable",
         details: { cause: String(err?.message || err) },
       },
-      { status: 502 },
+      { status: 502 }
     );
   }
 

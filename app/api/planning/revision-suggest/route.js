@@ -18,7 +18,7 @@ export async function POST(request) {
     "http://localhost:8081";
   const backendPath =
     process.env.PLANNING_REVISION_SUGGEST_PATH ||
-    "/students/planning/revision-suggest";
+    "/api/planning/revision-suggest";
 
   let payload;
   try {
