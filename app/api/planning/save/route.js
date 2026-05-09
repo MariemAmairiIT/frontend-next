@@ -16,7 +16,7 @@ export async function POST(request) {
     process.env.PLANNING_BACKEND_URL ||
     process.env.BACKEND_URL ||
     "http://localhost:8081";
-  const backendPath = process.env.PLANNING_SAVE_PATH || "/students/planning";
+  const backendPath = process.env.PLANNING_SAVE_PATH || "/api/planning";
 
   let payload;
   try {

@@ -53,7 +53,7 @@ export default function SignInForm({ message = "", roleFromQuery = "" }) {
       });
 
       // Redirect to dashboard
-      router.push(role === "student" ? "/schedule" : "/");
+      router.push(role === "student" ? "/dashboard" : "/");
     } catch (err) {
       clearAuthSession();
       setError(err.message || "Une erreur s'est produite lors de la connexion");

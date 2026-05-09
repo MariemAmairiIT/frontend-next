@@ -26,6 +26,11 @@
   --color-secondary-950: #0c233c;
 }
 
+
+html {
+  transition: background 0.3s ease;
+}
+
 @layer base {
   body {
     @apply bg-slate-50 text-slate-900 font-sans antialiased;

@@ -1,8 +1,3 @@
 {
-  "/api/planning/revision-sessions/route": "app/api/planning/revision-sessions/route.js",
-  "/schedule/page": "app/schedule/page.js",
-  "/study-plan/page": "app/study-plan/page.js",
-  "/page": "app/page.js",
-  "/upload/page": "app/upload/page.js",
-  "/(auth)/signin/page": "app/(auth)/signin/page.js"
+  "/page": "app/page.js"
 }

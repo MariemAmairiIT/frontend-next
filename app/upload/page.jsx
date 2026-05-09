@@ -280,7 +280,7 @@ const UploadSchedule = () => {
             end,
             subject: ev?.subject ?? null,
             room: ev?.room ?? null,
-            type: ev?.type ?? null,
+            type: ev?.type ?? ev?.sessionType ?? null,
             durationMinutes,
           };
         };
@@ -291,28 +291,80 @@ const UploadSchedule = () => {
             ? currentUser.email.trim().toLowerCase()
             : null;
 
-        await apiFetch('/api/planning/save', {
+        const eventsForSave = data.events
+          .map(normalizeEventForSave)
+          .filter((e) => e?.day && e?.start && e?.end);
+
+        if (eventsForSave.length === 0) {
+          throw new Error(
+            'Aucun créneau valide à enregistrer (jour/heure manquant). Vérifiez le fichier ou reconnectez-vous.',
+          );
+        }
+
+        const saveResult = await apiFetch('/api/planning/save', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             timezone: data.timezone,
+            warnings: Array.isArray(data.warnings) ? data.warnings : [],
             sourceFileName: file?.name ?? null,
             ownerEmail,
-            events: data.events.map(normalizeEventForSave),
+            events: eventsForSave,
           }),
         });
+
+        const timetableId =
+          saveResult && typeof saveResult === 'object'
+            ? saveResult.id || saveResult.timetableId
+            : null;
+
+        const persistedPlanning = {
+          ...data,
+          events: data.events,
+          id: timetableId || data.id,
+          timetableId: timetableId || data.timetableId,
+        };
+        savePlanningToStorage(persistedPlanning);
+
+        const nextMeta = {
+          fileName: file?.name || null,
+          importedAt: new Date().toISOString(),
+          timetableId: timetableId || null,
+        };
+        savePlanningMeta(nextMeta);
+        setExistingMeta(nextMeta);
+        setExistingPlanning(persistedPlanning);
+        try {
+          if (typeof window !== 'undefined') {
+            window.sessionStorage.removeItem('sp_timetable_persist_warning');
+          }
+        } catch {
+          // ignore
+        }
       } catch (persistErr) {
         // eslint-disable-next-line no-console
         console.warn('Backend planning save error:', persistErr);
+        const msg =
+          typeof persistErr?.message === 'string'
+            ? persistErr.message
+            : "L'emploi du temps n'a pas pu être enregistré sur le serveur (vérifiez la connexion et la session).";
+        try {
+          if (typeof window !== 'undefined') {
+            window.sessionStorage.setItem('sp_timetable_persist_warning', msg);
+          }
+        } catch {
+          // ignore
+        }
+        savePlanningToStorage(data);
+        const nextMeta = {
+          fileName: file?.name || null,
+          importedAt: new Date().toISOString(),
+        };
+        savePlanningMeta(nextMeta);
+        setExistingPlanning(data);
+        setExistingMeta(nextMeta);
       }
 
-      const nextMeta = {
-        fileName: file?.name || null,
-        importedAt: new Date().toISOString(),
-      };
-      savePlanningMeta(nextMeta);
-      setExistingPlanning(data);
-      setExistingMeta(nextMeta);
       setProgress(100);
       clearExtractionState();
       router.push('/schedule');
